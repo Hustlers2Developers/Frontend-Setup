@@ -103,13 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const getAccessToken = useCallback((): string | null => {
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
     const tokens = getTokens();
     if (!tokens?.accessToken) return null;
     
     if (isTokenExpired(tokens.accessToken)) {
-      refreshTokens();
-      return null;
+      const newToken = await refreshTokens();
+      return newToken;
     }
     
     return tokens.accessToken;
