@@ -21,8 +21,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.godevelopers.online";
-const JITSI_SUB = process.env.NEXT_PUBLIC_JITSI_SUB;
+const JITSI_SUB = process.env.NEXT_PUBLIC_JITSI_SUB || "vpaas-magic-cookie-848fabac26c646c8a1ae89fae59a5faa";
 
 interface JitsiMeetEmbedProps {
   room: string;
@@ -41,7 +40,7 @@ interface JitsiApi {
 }
 
 export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedProps) {
-  const { getAccessToken, user } = useAuth();
+  const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
   
@@ -52,48 +51,40 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<"good" | "poor" | "disconnected">("good");
 
-  // Fetch Jitsi token from backend
-  const fetchJitsiToken = useCallback(async (): Promise<string | null> => {
-    const accessToken = getAccessToken();
-    if (!accessToken) {
-      setError("Please login to join meetings");
-      setMeetingState("error");
-      return null;
-    }
-
+  // Get token from localStorage (stored during login)
+  const getStoredToken = useCallback((): string | null => {
     try {
-      const response = await fetch(`${API_BASE_URL}/jitsi/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get meeting token");
+      const stored = localStorage.getItem("h2d_tokens");
+      if (stored) {
+        const tokens = JSON.parse(stored);
+        console.log("[v0] Found stored tokens");
+        return tokens.accessToken || null;
       }
-
-      const data = await response.json();
-      return data.token;
     } catch (err) {
-      console.error("[v0] Failed to fetch Jitsi token:", err);
-      setError("Failed to authenticate for meeting. Please try again.");
-      setMeetingState("error");
-      return null;
+      console.log("[v0] Error reading tokens:", err);
     }
-  }, [getAccessToken]);
+    return null;
+  }, []);
 
   // Initialize Jitsi
   const initializeJitsi = useCallback(async () => {
-    if (!room || !containerRef.current) return;
+    if (!room || !containerRef.current) {
+      console.log("[v0] Missing room or container", { room, container: !!containerRef.current });
+      return;
+    }
 
     setMeetingState("loading");
     setError(null);
 
-    // Fetch token first
-    const jitsiToken = await fetchJitsiToken();
-    if (!jitsiToken) return;
+    // Get token from localStorage
+    const jitsiToken = getStoredToken();
+    console.log("[v0] Token retrieved:", jitsiToken ? "Yes (length: " + jitsiToken.length + ")" : "No");
+    
+    if (!jitsiToken) {
+      setError("Please login to join meetings");
+      setMeetingState("error");
+      return;
+    }
 
     setMeetingState("connecting");
 
@@ -101,11 +92,26 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
     const existingScript = document.querySelector('script[src="https://8x8.vc/external_api.js"]');
     
     const initApi = () => {
-      if (!window.JitsiMeetExternalAPI || !containerRef.current) return;
+      console.log("[v0] Initializing Jitsi API");
+      
+      if (!window.JitsiMeetExternalAPI) {
+        console.log("[v0] JitsiMeetExternalAPI not available on window");
+        setError("Meeting service failed to load");
+        setMeetingState("error");
+        return;
+      }
+
+      if (!containerRef.current) {
+        console.log("[v0] Container ref lost");
+        return;
+      }
 
       try {
+        const roomName = `${JITSI_SUB}/${room}`;
+        console.log("[v0] Creating Jitsi room:", roomName);
+
         const api = new window.JitsiMeetExternalAPI("8x8.vc", {
-          roomName: `${JITSI_SUB}/${room}`,
+          roomName: roomName,
           parentNode: containerRef.current,
           jwt: jitsiToken,
           configOverwrite: {
@@ -158,9 +164,11 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
         });
 
         apiRef.current = api;
+        console.log("[v0] Jitsi API created successfully");
 
         // Event listeners
         api.addEventListener("videoConferenceJoined", () => {
+          console.log("[v0] Video conference joined");
           setMeetingState("connected");
           setConnectionQuality("good");
         });
@@ -184,11 +192,13 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
         });
 
         api.addEventListener("readyToClose", () => {
+          console.log("[v0] Ready to close");
           setMeetingState("ended");
           onMeetingEnd?.();
         });
 
         api.addEventListener("videoConferenceLeft", () => {
+          console.log("[v0] Video conference left");
           setMeetingState("ended");
           onMeetingEnd?.();
         });
@@ -205,13 +215,19 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
     };
 
     if (existingScript && window.JitsiMeetExternalAPI) {
+      console.log("[v0] Jitsi script already loaded, initializing directly");
       initApi();
     } else {
+      console.log("[v0] Loading Jitsi script");
       const script = document.createElement("script");
       script.src = "https://8x8.vc/external_api.js";
       script.async = true;
-      script.onload = initApi;
+      script.onload = () => {
+        console.log("[v0] Jitsi script loaded");
+        initApi();
+      };
       script.onerror = () => {
+        console.log("[v0] Failed to load Jitsi script");
         setError("Failed to load meeting service. Check your connection.");
         setMeetingState("error");
       };
@@ -224,7 +240,7 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
         apiRef.current = null;
       }
     };
-  }, [room, fetchJitsiToken, user, onMeetingEnd]);
+  }, [room, getStoredToken, user, onMeetingEnd]);
 
   useEffect(() => {
     initializeJitsi();
@@ -270,7 +286,7 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
             Preparing Meeting
           </h2>
           <p className="text-muted-foreground">
-            Authenticating and setting up your meeting room...
+            Setting up your meeting room...
           </p>
         </Card>
       </div>
@@ -361,7 +377,7 @@ export default function JitsiMeetEmbed({ room, onMeetingEnd }: JitsiMeetEmbedPro
   return (
     <div className="h-screen w-full bg-background flex flex-col">
       {/* Meeting header */}
-      <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4">
+      <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Video className="w-4 h-4 text-primary" />
