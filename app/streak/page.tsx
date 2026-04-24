@@ -221,76 +221,79 @@ export default function StreakPage() {
               </Card>
 
               {/* Calendar */}
-              <Card className="p-6 bg-card border-border">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-foreground">
+              <Card className="p-4 sm:p-6 bg-card border-border">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">
                     {monthNames[calendar.month]} {calendar.year}
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Day headers */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {dayNames.map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar grid */}
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Empty cells for days before month starts */}
-                  {Array.from({ length: calendar.firstDayOfMonth }).map((_, i) => (
-                    <div key={`empty-${i}`} className="aspect-square" />
-                  ))}
-                  
-                  {/* Days of the month */}
-                  {Array.from({ length: calendar.daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const isActive = calendar.activeDays.has(day);
-                    const isToday = day === calendar.today;
-                    const isPast = day < calendar.today;
-                    
-                    return (
-                      <div
-                        key={day}
-                        className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
-                          isToday 
-                            ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background" 
-                            : isActive 
-                              ? "bg-primary/20 text-primary"
-                              : isPast 
-                                ? "text-muted-foreground/50"
-                                : "text-muted-foreground hover:bg-secondary"
-                        }`}
-                      >
-                        {day}
+                {/* Calendar container with max width for consistent sizing */}
+                <div className="max-w-[320px] mx-auto">
+                  {/* Day headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {dayNames.map(day => (
+                      <div key={day} className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-1 sm:py-2">
+                        {day.slice(0, 2)}
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+
+                  {/* Calendar grid - fixed size cells */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Empty cells for days before month starts */}
+                    {Array.from({ length: calendar.firstDayOfMonth }).map((_, i) => (
+                      <div key={`empty-${i}`} className="w-10 h-10 sm:w-10 sm:h-10" />
+                    ))}
+                    
+                    {/* Days of the month */}
+                    {Array.from({ length: calendar.daysInMonth }).map((_, i) => {
+                      const day = i + 1;
+                      const isActive = calendar.activeDays.has(day);
+                      const isToday = day === calendar.today;
+                      const isPast = day < calendar.today;
+                      
+                      return (
+                        <div
+                          key={day}
+                          className={`w-10 h-10 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                            isToday 
+                              ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1 ring-offset-background" 
+                              : isActive 
+                                ? "bg-primary/20 text-primary hover:bg-primary/30"
+                                : isPast 
+                                  ? "text-muted-foreground/50 hover:bg-secondary/50"
+                                  : "text-muted-foreground hover:bg-secondary"
+                          }`}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-primary/20" />
-                    <span className="text-xs text-muted-foreground">Active</span>
+                <div className="flex items-center justify-center gap-4 sm:gap-6 mt-4 sm:mt-6 pt-4 border-t border-border">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-primary/20" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">Active</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-primary" />
-                    <span className="text-xs text-muted-foreground">Today</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-primary" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">Today</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-muted" />
-                    <span className="text-xs text-muted-foreground">Missed</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-muted" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">Missed</span>
                   </div>
                 </div>
               </Card>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { 
   Flame, 
   Trophy, 
@@ -22,7 +24,9 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
-  Star
+  Star,
+  Video,
+  LogIn
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -81,7 +85,9 @@ const quickLinks = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [currentStreak] = useState(12);
+  const [meetingRoom, setMeetingRoom] = useState("");
   const longestStreak = 28;
   const totalDays = 47;
   const rank = 156;
@@ -346,6 +352,52 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+              </Card>
+
+              {/* Join Meeting Card */}
+              <Card className="p-6 bg-card border-border">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Video className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Join Meeting</h3>
+                    <p className="text-xs text-muted-foreground">Enter room name to join</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Room name..."
+                    value={meetingRoom}
+                    onChange={(e) => setMeetingRoom(e.target.value)}
+                    className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && meetingRoom.trim()) {
+                        router.push(`/meeting/${encodeURIComponent(meetingRoom.trim())}`);
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={() => {
+                      if (meetingRoom.trim()) {
+                        router.push(`/meeting/${encodeURIComponent(meetingRoom.trim())}`);
+                      }
+                    }}
+                    disabled={!meetingRoom.trim()}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Join
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-3 border-border hover:bg-secondary gap-2"
+                  onClick={() => router.push("/meeting/hustler-space")}
+                >
+                  <Users className="w-4 h-4" />
+                  Join Hustler Space
+                </Button>
               </Card>
 
               {/* Motivation card */}
